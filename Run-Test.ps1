@@ -1,9 +1,42 @@
-# --- Configuration ---
-$computerName = "198.19.253.174"
+# --- DYNAMIC CONFIGURATION ---
+# This section automatically finds the correct IP address based on local files.
+Write-Host "Determining local pod and IP address..."
+try {
+    # 1. Get the Pod Name from the XML file
+    $xmlPath = 'C:\dcloud\session.xml'
+    $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
+    if (-not $podName) { throw "Pod name not found in $xmlPath" }
+    Write-Host "Found Pod Name: $podName"
+
+    # 2. Build a lookup table from the pods.txt file
+    $podsTxtPath = 'C:\Scripts\pods.txt'
+    # Read the file and create a searchable hashtable (e.g., @{'dcv-mds-pod1'='198.19.253.171'})
+    $ipLookup = @{}
+    Get-Content $podsTxtPath | ForEach-Object {
+        # This removes the 'set "' and '"' parts and splits the line into a key and value
+        if ($_ -match 'set "(.*)=(.*)"') {
+            $key = $matches[1]
+            $value = $matches[2]
+            $ipLookup[$key] = $value
+        }
+    }
+    
+    # 3. Find the IP that matches the Pod Name
+    $computerName = $ipLookup[$podName]
+    if (-not $computerName) { throw "IP for $podName not found in $podsTxtPath" }
+    Write-Host "Found matching IP: $computerName"
+}
+catch {
+    Write-Host "Error during automatic configuration: $($_.Exception.Message)"
+    Read-Host "Press ENTER to exit."
+    exit
+}
+
+# --- STATIC CONFIGURATION ---
 $userName = "dcloud\demouser"
 $plainTextPassword = "C1sco12345"
 
-# --- Script Body ---
+# --- SCRIPT BODY ---
 # Convert the plain text password to a Secure String
 $securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
 
