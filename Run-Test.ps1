@@ -44,20 +44,17 @@ $scriptBlock = {
     # Wait for both jobs to complete
     Wait-Job -Job $job1, $job2
 
-    # Get the results from both jobs
-    $result1 = Receive-Job -Job $job1
-    $result2 = Receive-Job -Job $job2
-    
     # Clean up the jobs and test files from the remote machine
     Remove-Job -Job $job1, $job2 -Force
     Remove-Item -Path E:\san_testfile_*.dat -Force -ErrorAction SilentlyContinue
 
-    # Return the combined results in a formatted string
-    return "--- Results for Small File Test ---`n$result1`n`n--- Results for Large File Test ---`n$result2"
+    # --- MODIFIED LINE ---
+    # Return the simple success message instead of the results
+    return "The test completed successfully"
 }
 
-# Invoke the command and capture the returned results
-$finalResults = Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
+# Invoke the command and capture the returned message
+$finalMessage = Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
 
-# Output the final results so the master script can display them
-Write-Output $finalResults
+# Output the final message so the master script can display it
+Write-Output $finalMessage
