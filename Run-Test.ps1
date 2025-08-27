@@ -37,9 +37,9 @@ $scriptBlock = {
         cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat"
     }
 
-    # Start both tests as parallel background jobs
-    $job1 = Start-Job -ScriptBlock $script1
-    $job2 = Start-Job -ScriptBlock $script2
+    # Start both tests as parallel background jobs and hide their output objects
+    $job1 = Start-Job -ScriptBlock $script1 | Out-Null
+    $job2 = Start-Job -ScriptBlock $script2 | Out-Null
 
     # Wait for both jobs to complete
     Wait-Job -Job $job1, $job2
@@ -48,7 +48,7 @@ $scriptBlock = {
     Remove-Job -Job $job1, $job2 -Force
     Remove-Item -Path E:\san_testfile_*.dat -Force -ErrorAction SilentlyContinue
 
-    # Return the simple success message instead of the results
+    # Return the simple success message
     return "The test completed successfully"
 }
 
