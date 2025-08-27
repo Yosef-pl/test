@@ -46,8 +46,8 @@ $credential = New-Object System.Management.Automation.PSCredential($userName, $s
 # This is the command you want to run on the remote computer
 $scriptBlock = {
     # The '> NUL 2>&1' part hides all output from the diskspd command
-    cmd /c "diskspd.exe -c40G -b1M -d100 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 E:\san_testfile_small.dat > NUL 2>&1"
-    cmd /c "diskspd.exe -c40G -b8k -d100 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat > NUL 2>&1"
+    cmd /c "diskspd.exe -c40G -b1M -d200 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 E:\san_testfile_small.dat > NUL 2>&1"
+    cmd /c "diskspd.exe -c40G -b8k -d200 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat > NUL 2>&1"
 }
 
 # This command connects to the remote PC and runs the script block
@@ -58,4 +58,5 @@ Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock 
 Write-Host "The test is now running."
 # This new line will keep the window open until you press Enter
 Read-Host "Press ENTER to exit."
+
 
