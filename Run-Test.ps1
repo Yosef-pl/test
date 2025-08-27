@@ -48,7 +48,6 @@ $scriptBlock = {
     Remove-Job -Job $job1, $job2 -Force
     Remove-Item -Path E:\san_testfile_*.dat -Force -ErrorAction SilentlyContinue
 
-    # --- MODIFIED LINE ---
     # Return the simple success message instead of the results
     return "The test completed successfully"
 }
