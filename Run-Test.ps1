@@ -1,4 +1,11 @@
-# --- DYNAMIC CONFIGURATION (Silent) ---
+# --- USER INTERFACE AND SCRIPT BODY ---
+# This script is now self-contained. It handles all user messages and actions.
+
+# 1. Clear the screen and display the status message
+Clear-Host
+Write-Host "The test is now running, it will finish after 5 minutes..."
+
+# 2. Dynamically find the target computer's IP address
 try {
     $xmlPath = 'C:\dCloud\session.xml'
     $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
@@ -16,43 +23,42 @@ try {
     if (-not $computerName) { throw "IP for $podName not found in $podsTxtPath" }
 }
 catch {
-    # Exit silently on error
+    Write-Host "Error during automatic configuration: $($_.Exception.Message)"
     exit
 }
 
-# --- STATIC CONFIGURATION ---
+# 3. Define credentials
 $userName = "dcloud\demouser"
 $plainTextPassword = "C1sco12345"
-
-# --- SCRIPT BODY ---
 $securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential($userName, $securePassword)
 
-# This script block will run on the remote machine
+# 4. Define the remote commands
 $scriptBlock = {
-    # 1. Define file paths
+    # Define file paths
     $smallTestFile = "E:\san_testfile_small.dat"
     $largeTestFile = "E:\san_testfile_large.dat"
     $smallResultFile = "E:\Results_SmallFile.txt"
     $largeResultFile = "E:\Results_LargeFile.txt"
 
-    # 2. Run the disk tests and save results to files
-    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile > $smallResultFile"
-    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile > $largeResultFile"
+    # Run the disk tests for 5 minutes (-d300) and save results
+    cmd /c "diskspd.exe -c40G -b1M -d300 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile > $smallResultFile"
+    cmd /c "diskspd.exe -c40G -b8k -d300 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile > $largeResultFile"
 
-    # 3. Read the content of the result files to send it back
+    # Read the content of the result files to send it back
     $result1 = Get-Content -Path $smallResultFile -Raw
     $result2 = Get-Content -Path $largeResultFile -Raw
 
-    # 4. Clean up the files on the remote machine
+    # Clean up the files on the remote machine
     Remove-Item -Path $smallTestFile, $largeTestFile, $smallResultFile, $largeResultFile -Force
 
-    # 5. Return the results
+    # Return the results
     return "$result1`n`n$result2"
 }
 
-# Invoke the command and capture the returned results
+# 5. Run the remote command and capture the output
 $finalResults = Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
 
-# Output the final results so the master script can display them
+# 6. Clear the "test is running" message and display the final results
+Clear-Host
 Write-Output $finalResults
