@@ -3,7 +3,7 @@
 Write-Host "Determining local pod and IP address..."
 try {
     # 1. Get the Pod Name from the XML file
-    $xmlPath = 'C:\dCloud\session.xml'
+    $xmlPath = 'C:\dcloud\session.xml'
     $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
     if (-not $podName) { throw "Pod name not found in $xmlPath" }
     Write-Host "Found Pod Name: $podName"
@@ -45,19 +45,14 @@ $credential = New-Object System.Management.Automation.PSCredential($userName, $s
 
 # This is the command you want to run on the remote computer
 $scriptBlock = {
-    # The '> NUL 2>&1' part hides all output from the diskspd command
-    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 E:\san_testfile_small.dat > NUL 2>&1"
-    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat > NUL 2>&1"
+    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 E:\san_testfile_small.dat"
+    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat"
 }
 
 # This command connects to the remote PC and runs the script block
 Write-Host "Starting remote disk tests on $computerName..."
 Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
 
-# Display the custom message after launching the commands
-Write-Host "The test is now running."
+Write-Host "Remote commands have been launched successfully."
 # This new line will keep the window open until you press Enter
 Read-Host "Press ENTER to exit."
-
-
-
