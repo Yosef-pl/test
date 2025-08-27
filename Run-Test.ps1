@@ -3,7 +3,7 @@
 
 # 1. Clear the screen and display the status message
 Clear-Host
-Write-Host "The test is now running, it will finish after 5 minutes..."
+Write-Host " The test is now running, it will finish after 5 minutes..."
 
 # 2. Dynamically find the target computer's IP address
 try {
@@ -42,8 +42,8 @@ $scriptBlock = {
     $largeResultFile = "E:\Results_LargeFile.txt"
 
     # Run the disk tests for 5 minutes (-d300) and save results
-    cmd /c "diskspd.exe -c40G -b1M -d300 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile > $smallResultFile"
-    cmd /c "diskspd.exe -c40G -b8k -d300 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile > $largeResultFile"
+    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile > $smallResultFile"
+    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile > $largeResultFile"
 
     # Read the content of the result files to send it back
     $result1 = Get-Content -Path $smallResultFile -Raw
@@ -62,3 +62,4 @@ $finalResults = Invoke-Command -ComputerName $computerName -Credential $credenti
 # 6. Clear the "test is running" message and display the final results
 Clear-Host
 Write-Output $finalResults
+
