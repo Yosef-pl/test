@@ -1,7 +1,4 @@
-# --- REMOTE JOB STARTER SCRIPT ---
-# This script's job is to configure and start the remote test, then hand off control.
-
-# 1. Dynamically find the target computer's IP address
+# --- DYNAMIC CONFIGURATION (Silent) ---
 try {
     $xmlPath = 'C:\dCloud\session.xml'
     $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
@@ -19,33 +16,43 @@ try {
     if (-not $computerName) { throw "IP for $podName not found in $podsTxtPath" }
 }
 catch {
-    Write-Host "Error during automatic configuration: $($_.Exception.Message)"
+    # Exit silently on error
     exit
 }
 
-# 2. Define credentials
+# --- STATIC CONFIGURATION ---
 $userName = "dcloud\demouser"
 $plainTextPassword = "C1sco12345"
+
+# --- SCRIPT BODY ---
 $securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential($userName, $securePassword)
 
-# 3. Define the remote commands
+# This script block will run on the remote machine
 $scriptBlock = {
+    # 1. Define file paths
     $smallTestFile = "E:\san_testfile_small.dat"
     $largeTestFile = "E:\san_testfile_large.dat"
-    
-    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile"
-    Start-Sleep -Seconds 5
-    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile"
+    $smallResultFile = "E:\Results_SmallFile.txt"
+    $largeResultFile = "E:\Results_LargeFile.txt"
+
+    # 2. Run the disk tests and save results to files
+    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile > $smallResultFile"
+    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile > $largeResultFile"
+
+    # 3. Read the content of the result files to send it back
+    $result1 = Get-Content -Path $smallResultFile -Raw
+    $result2 = Get-Content -Path $largeResultFile -Raw
+
+    # 4. Clean up the files on the remote machine
+    Remove-Item -Path $smallTestFile, $largeTestFile, $smallResultFile, $largeResultFile -Force
+
+    # 5. Return the results
+    return "$result1`n`n$result2"
 }
 
-# 4. Create a session, start the job, and return the management objects
-$session = New-PSSession -ComputerName $computerName -Credential $credential
-$job = Invoke-Command -Session $session -ScriptBlock $scriptBlock -AsJob
+# Invoke the command and capture the returned results
+$finalResults = Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
 
-# Return both the session and the job so the master script can control them
-return [PSCustomObject]@{
-    Session = $session
-    Job = $job
-}
-
+# Output the final results so the master script can display them
+Write-Output $finalResults
