@@ -34,9 +34,9 @@ $scriptBlock = {
     $smallTestFile = "E:\san_testfile_small.dat"
     $largeTestFile = "E:\san_testfile_large.dat"
     
-    cmd /c "diskspd.exe -c40G -b1M -d300 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile"
+    cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 $smallTestFile"
     Start-Sleep -Seconds 5
-    cmd /c "diskspd.exe -c40G -b8k -d300 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile"
+    cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 $largeTestFile"
 }
 
 # 4. Create a session, start the job, and return the management objects
@@ -48,3 +48,4 @@ return [PSCustomObject]@{
     Session = $session
     Job = $job
 }
+
