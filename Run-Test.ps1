@@ -1,30 +1,30 @@
 # --- DYNAMIC CONFIGURATION (Silent) ---
-# This section automatically finds the correct IP address based on local files.
+# This section reads all settings from local files.
 try {
+    # 1. Read all settings from pods.txt into a lookup table
+    $podsTxtPath = 'C:\Scripts\pods.txt'
+    $configData = Get-Content -Path $podsTxtPath -Raw | ConvertFrom-StringData
+    
+    # 2. Get the local Pod Name from the XML file
     $xmlPath = 'C:\dCloud\session.xml'
     $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
     if (-not $podName) { throw "Pod name not found in $xmlPath" }
-
-    $podsTxtPath = 'C:\Scripts\pods.txt'
-    $ipLookup = @{}
-    Get-Content $podsTxtPath | ForEach-Object {
-        if ($_ -match 'set "(.*)=(.*)"') {
-            $ipLookup[$matches[1]] = $matches[2]
-        }
-    }
     
-    $computerName = $ipLookup[$podName]
-    if (-not $computerName) { throw "IP for $podName not found in $podsTxtPath" }
+    # 3. Look up all variables from the configuration data
+    $computerName = $configData[$podName]
+    $userName = $configData.userName
+    $plainTextPassword = $configData.plainTextPassword
+    
+    # 4. Check that all values were found
+    if (-not ($computerName -and $userName -and $plainTextPassword)) {
+        throw "One or more required values (IP, username, or password) were not found in $podsTxtPath"
+    }
 }
 catch {
     Write-Host "An error occurred during configuration: $($_.Exception.Message)"
     Read-Host "Press ENTER to exit."
     exit
 }
-
-# --- STATIC CONFIGURATION ---
-$userName = "dcloud\demouser"
-$plainTextPassword = "C1sco12345"
 
 # --- SCRIPT BODY ---
 $securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
