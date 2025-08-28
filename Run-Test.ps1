@@ -1,7 +1,7 @@
-# --- DYNAMIC CONFIGURATION (Silent) ---
-# This section reads all settings from local files.
+# --- DYNAMIC CONFIGURATION ---
 try {
     # 1. Read all settings from pods.txt into a lookup table
+    # This script assumes pods.txt uses a simple 'key=value' format
     $podsTxtPath = 'C:\Scripts\pods.txt'
     $configData = Get-Content -Path $podsTxtPath -Raw | ConvertFrom-StringData
     
@@ -10,61 +10,24 @@ try {
     $podName = (Select-Xml -Path $xmlPath -XPath '//device/name').Node.'#text'
     if (-not $podName) { throw "Pod name not found in $xmlPath" }
     
-    # 3. Look up all variables from the configuration data
+    # 3. Look up the IP address that matches the pod name
     $computerName = $configData[$podName]
-    $userName = $configData.userName
-    $plainTextPassword = $configData.plainTextPassword
-    
-    # 4. Check that all values were found
-    if (-not ($computerName -and $userName -and $plainTextPassword)) {
-        throw "One or more required values (IP, username, or password) were not found in $podsTxtPath"
-    }
+    if (-not $computerName) { throw "IP for $podName not found in $podsTxtPath" }
 }
 catch {
-    Write-Host "An error occurred during configuration: $($_.Exception.Message)"
+    Write-Host "An error occurred during configuration:" -ForegroundColor Red
+    Write-Host $_.Exception.Message
     Read-Host "Press ENTER to exit."
     exit
 }
 
-# --- SCRIPT BODY ---
-$securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
-$credential = New-Object System.Management.Automation.PSCredential($userName, $securePassword)
-
-# This script block will run on the remote machine
-$scriptBlock = {
-    # Define the two test commands as PowerShell script blocks
-    $script1 = {
-        cmd /c "diskspd.exe -c40G -b1M -d10 -r -w100 -t8 -o64 -L -Sh -L -Zr -W0 E:\san_testfile_small.dat"
-    }
-    $script2 = {
-        cmd /c "diskspd.exe -c40G -b8k -d10 -r -w10 -t16 -o256 -L -Sh -L -Zr -W0 E:\san_testfile_large.dat"
-    }
-
-    # Start both tests as parallel background jobs and hide their output objects
-    $job1 = Start-Job -ScriptBlock $script1 | Out-Null
-    $job2 = Start-Job -ScriptBlock $script2 | Out-Null
-
-    # Wait for both jobs to complete
-    Wait-Job -Job $job1, $job2
-
-    # Clean up the jobs and test files from the remote machine
-    Remove-Job -Job $job1, $job2 -Force
-    Remove-Item -Path E:\san_testfile_*.dat -Force -ErrorAction SilentlyContinue
-
-    # Return the simple success message
-    return "The test completed successfully"
-}
-
-# --- EXECUTION ---
+# --- TASK EXECUTION ---
 Clear-Host
-Write-Host "The tests are now running simultaneously for 10 seconds..."
+Write-Host "Pinging pod '$podName' at IP address $computerName..."
+Write-Host "------------------------------------------------"
 
-# Invoke the command and capture the returned message
-$finalMessage = Invoke-Command -ComputerName $computerName -Credential $credential -ScriptBlock $scriptBlock
-
-# Clear the status message and display the final message
-Clear-Host
-Write-Host $finalMessage
+# Run the ping test (Test-Connection is the PowerShell version of ping)
+Test-Connection -ComputerName $computerName -Count 4
     
 # Keep the final output on screen until you press Enter
-Read-Host "`nPress ENTER to exit."
+Read-Host "`nTest complete. Press ENTER to exit."
